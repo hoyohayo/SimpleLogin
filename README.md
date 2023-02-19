@@ -2,7 +2,7 @@
 
 ## Server prerequisites:
 
-1. Setup your own server with hostname set to your domain where you will be hosting simplelogin webapp (`sl.example.com`) and add entry in '/etc/hosts':
+1. Setup your own server with hostname set to your domain where you will be hosting simplelogin webapp (`sl.example.com`) and add entry in `/etc/hosts`:
 ```
 127.0.0.1    sl.example.com  sl
 ```
@@ -37,13 +37,13 @@ mkdir sl sl/pgp sl/db sl/upload
 ```
 openssl genrsa -traditional -out dkim.key 1024
 ```
-The `-traditional` flag is needed for openssl version 3 (check version with `openssl version`)
+The `-traditional` flag is needed if using openssl version 3 (check version with `openssl version`)
 ```
 openssl rsa -in dkim.key -pubout -out dkim.pub.key
 ```
 
 # DNS records
-----------------------------------------------------------------------------------------
+
 1. A-record that points `sl.example.com`. to my server IP
  This needs to be setup at your domain. If you use DynDNS, make sure your WAN adress is updated correctly.
 
@@ -71,7 +71,7 @@ v=DMARC1; p=quarantine; adkim=r; aspf=r
 dig @1.1.1.1 example.com <type>
 nslookup -type= example.com
 ```
-----------------------------------------------------------------------------------------
+
 ## Preparing Docker environment
 1. Install Docker
 ```
@@ -270,7 +270,7 @@ POSTFIX_SERVER=10.0.0.1
 -------------------------------------------------------------------------
 
 
-10. Database migration (replace `simplelogin/app:4.6.2-beta` with latest version in [Docker](https://hub.docker.com/r/simplelogin/app/tags)
+10. Database migration (replace `simplelogin/app:4.6.2-beta` with latest version on [Docker Hub](https://hub.docker.com/r/simplelogin/app/tags)
 ```
 sudo docker run --rm \
     --name sl-migration \
@@ -404,7 +404,7 @@ sudo docker exec -it sl-db psql -U dbuser simplelogin
 UPDATE users SET lifetime = TRUE;
 exit
 ```
-# Disable registrations in simplelogin.env
+# Disable registrations in `simplelogin.env`
 ```
 DISABLE_REGISTRATION=1
 DISABLE_ONBOARDING=true
