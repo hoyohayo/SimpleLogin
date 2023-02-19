@@ -37,7 +37,7 @@ mkdir sl sl/pgp sl/db sl/upload
 ```
 openssl genrsa -traditional -out dkim.key 1024
 ```
-The '-traditional' flag is needed for openssl version 3 (check version with `openssl version`)
+The `-traditional` flag is needed for openssl version 3 (check version with `openssl version`)
 ```
 openssl rsa -in dkim.key -pubout -out dkim.pub.key
 ```
@@ -413,3 +413,22 @@ DISABLE_ONBOARDING=true
 ```
 sudo docker restart sl-app
 ```
+
+# Troubleshooting
+
+- If encountering problems visit this tutorial: [SimpleLogin Setup](https://invidious.snopyta.org/watch?v=HuEGpNPALxY)
+
+- If you encounter the problem of not being able to add your custom domain in your mailbox, follow this [Github Error](https://github.com/simple-login/app/issues/382).
+In short:
+```
+sudo docker exec -it sl-db psql -U dbuser simplelogin
+
+-- Get your user ID
+SELECT id,email FROM users;
+
+-- Add your domain
+INSERT INTO custom_domain 
+    (created_at,user_id,domain,verified) 
+VALUES (NOW(),#YOUR_USER_ID#,'#YOUR.DOMAIN#',FALSE);
+```
+- [Github](https://github.com/simple-login/app/issues) is always a good place to check for Simplelogin app issues. Even though the guide is pretty outdated. [MX Toolbox](https://mxtoolbox.com/) is handy for tracing any bugs in postfix or email sending.
