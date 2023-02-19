@@ -2,19 +2,23 @@
 
 ## Server prerequisites:
 
-1. Setup your own server with hostname set to your domain where you will be hosting simplelogin webapp (sl.example.com) and add entry in '/etc/hosts':
-```127.0.0.1    sl.example.com  sl```
+1. Setup your own server with hostname set to your domain where you will be hosting simplelogin webapp (`sl.example.com`) and add entry in '/etc/hosts':
+```
+127.0.0.1    sl.example.com  sl
+```
 
 2. Make sure everything is up to date:
-```sudo apt update && sudo apt upgrade -y```
+```
+sudo apt update && sudo apt upgrade -y
+```
 
-3. enable these firewall rules
+3. Enable these firewall rules
 ```
 sudo ufw allow 25
 sudo ufw allow 80
 sudo ufw allow 443
 ```
-4. enable firewall
+4. Enable firewall
 ```
 sudo ufw enable
 ```
@@ -33,31 +37,31 @@ mkdir sl sl/pgp sl/db sl/upload
 ```
 openssl genrsa -traditional -out dkim.key 1024
 ```
-The '-traditional' flag is needed for openssl version 3 (check version with 'openssl version')
+The '-traditional' flag is needed for openssl version 3 (check version with `openssl version`)
 ```
 openssl rsa -in dkim.key -pubout -out dkim.pub.key
 ```
 
 # DNS records
 ----------------------------------------------------------------------------------------
-1. A-record that points sl.example.com. to my server IP
+1. A-record that points `sl.example.com`. to my server IP
  This needs to be setup at your domain. If you use DynDNS, make sure your WAN adress is updated correctly.
 
-2. MX-record that points example.com. to sl.example.com. with priority 10
+2. MX-record that points `example.com`. to `sl.example.com`. with priority 10
 Also setup at your domain. Each registrar is different so please refer to to their documentation
 
-3. TXT-record for dkim._domainkey.example.com.
+3. TXT-record for `dkim._domainkey.example.com`.
 ```
 sed "s/-----BEGIN PUBLIC KEY-----/v=DKIM1; k=rsa; p=/g" $(pwd)/dkim.pub.key | sed 's/-----END PUBLIC KEY-----//g' |tr -d '\n' | awk 1
 ```
 Copy the output of that command into the DKIM record on your domain.
 
-4. TXT-record for example.com.
+4. TXT-record for `example.com`.
 ```
 v=spf1 mx ~all
 ```
 
-5. TXT-record for _dmarc.example.com.
+5. TXT-record for `_dmarc.example.com`.
 ```
 v=DMARC1; p=quarantine; adkim=r; aspf=r
 ```
@@ -83,6 +87,8 @@ sudo docker network create -d bridge \
 ```
 
 3. Postgres db container
+Replace `MySuperStrongPassword` with your preferred secure password.
+
 ```
 sudo docker run -d \
     --name sl-db \
@@ -96,7 +102,7 @@ sudo docker run -d \
     postgres:13
 ```
 
-4. test db
+4. Test db
 ```
 sudo docker exec -it sl-db psql -U dbuser simplelogin
 ```
@@ -214,12 +220,12 @@ query = SELECT 'smtp:127.0.0.1:20381' FROM custom_domain WHERE domain = '%s' AND
 ```
 sudo systemctl restart postfix
 ```
-7. Generate Flask secret
+7. Install pwgen
 ```
 sudo apt install pwgen
 ```
 
-8. Copy output of command into Flask Secret
+8. Generate Flask Secret, copy output of command into Flask Secret in `simplelogin.env`
 ```
 pwgen -B -s -y 64 -N 1
 ```
@@ -264,7 +270,7 @@ POSTFIX_SERVER=10.0.0.1
 -------------------------------------------------------------------------
 
 
-10. db migration (replace simplelogin/app:4.6.2-beta with latest version in [Docker](https://hub.docker.com/r/simplelogin/app/tags)
+10. Database migration (replace `simplelogin/app:4.6.2-beta` with latest version in [Docker](https://hub.docker.com/r/simplelogin/app/tags)
 ```
 sudo docker run --rm \
     --name sl-migration \
@@ -276,7 +282,7 @@ sudo docker run --rm \
     --network="sl-network" \
     simplelogin/app:4.6.2-beta alembic upgrade head
 ```
-11. init data
+11. Init data
 ```
 sudo docker run --rm \
     --name sl-init \
@@ -287,7 +293,7 @@ sudo docker run --rm \
     --network="sl-network" \
     simplelogin/app:4.6.2-beta python init_app.py
 ```
-12. webapp
+12. Webapp
 ```
 sudo docker run -d \
     --name sl-app \
@@ -301,7 +307,7 @@ sudo docker run -d \
     --network="sl-network" \
     simplelogin/app:4.6.2-beta
 ```
-13. email handler
+13. Email handler
 ```
 sudo docker run -d \
     --name sl-email \
@@ -315,7 +321,7 @@ sudo docker run -d \
     --network="sl-network" \
     simplelogin/app:4.6.2-beta python email_handler.py
 ```
-14. job runner
+14. Job runner
 ```
 sudo docker run -d \
     --name sl-job-runner \
@@ -328,7 +334,7 @@ sudo docker run -d \
     --network="sl-network" \
     simplelogin/app:4.6.2-beta python job_runner.py
 ```
-15. nginx
+15. Nginx
 ```
 sudo apt install nginx
 sudo nano /etc/nginx/sites-enabled/simplelogin
@@ -345,7 +351,7 @@ server {
 ```
 -------------------------------------------------------------------------
 
-16. reload nginx
+16. Reload nginx
 ```
 sudo systemctl reload nginx
 ```
@@ -387,23 +393,23 @@ add_header Strict-Transport-Security "max-age: 31536000; includeSubDomains" alwa
 ```
 -------------------------------------------------------------------------
 
-**reload nginx**
+**Reload nginx**
 ```
 sudo systemctl reload nginx
 ```
 
-# make account premium
+# Make account premium
 ```
-sudo docker exec -it sl-db psql -U hoyohayo simplelogin
+sudo docker exec -it sl-db psql -U dbuser simplelogin
 UPDATE users SET lifetime = TRUE;
 exit
 ```
-# disable registrations in simplelogin.env
+# Disable registrations in simplelogin.env
 ```
 DISABLE_REGISTRATION=1
 DISABLE_ONBOARDING=true
 ```
-# restart web-app
+# Restart web-app
 ```
 sudo docker restart sl-app
 ```
