@@ -432,3 +432,94 @@ INSERT INTO custom_domain
 VALUES (NOW(),#YOUR_USER_ID#,'#YOUR.DOMAIN#',FALSE);
 ```
 - [Github](https://github.com/simple-login/app/issues) is always a good place to check for Simplelogin app issues. Even though the guide is pretty outdated. [MX Toolbox](https://mxtoolbox.com/) is handy for tracing any bugs in postfix or email sending.
+
+## Upgrading simplelogin-app
+1. Check [docker-hub](https://hub.docker.com/r/simplelogin/app/tags) for latest version of simplelogin-app.
+
+2. Pull latest image on docker and if folder `upload` is non existent, create it.
+```
+sudo docker pull simplelogin/app:4.6.2-beta
+sudo docker stop sl-email sl-app sl-db sl-job-runner
+sudo docker rm -f sl-email sl-app sl-db sl-job-runner
+mkdir -p ./sl/upload/
+```
+
+3. Run the db container
+```
+sudo docker run -d \
+    --name sl-db \
+    -e POSTGRES_PASSWORD=MySuperStrongPassword \
+    -e POSTGRES_USER=dbuser \
+    -e POSTGRES_DB=simplelogin \
+    -p 127.0.0.1:5432:5432 \
+    -v $(pwd)/sl/db:/var/lib/postgresql/data \
+    --restart always \
+    --network="sl-network" \
+    postgres:12.1
+```
+4. Run the db migration
+
+```
+sudo docker run --rm \
+    --name sl-migration \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    --network="sl-network" \
+    simplelogin/app:4.6.2-beta alembic upgrade head
+```
+5. Run init data
+```
+sudo docker run --rm \
+    --name sl-init \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --network="sl-network" \
+    simplelogin/app:4.6.2-beta python init_app.py
+```
+6. Run the webapp container
+```
+sudo docker run -d \
+    --name sl-app \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -p 127.0.0.1:7777:7777 \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:4.6.2-beta
+```
+7. Run the email handler container
+```
+sudo docker run -d \
+    --name sl-email \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -p 127.0.0.1:20381:20381 \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:4.6.2-beta python email_handler.py
+```    
+8. Run the job runner
+```
+sudo docker run -d \
+    --name sl-job-runner \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:4.6.2-beta python job_runner.py
+```
